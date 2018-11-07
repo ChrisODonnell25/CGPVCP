@@ -3,15 +3,15 @@ package com.fyp.cgp.genes;
 import java.util.ArrayList;
 
 public abstract class GenericGeneration {
-    ArrayList<Individual> generation = new ArrayList<>();
-    Individual bestIndividual;
+    ArrayList<VCPIndividual> generation = new ArrayList<>();
+    VCPIndividual bestIndividual;
     double bestScoreOverall;
 
 
-    public ArrayList<Individual> getGeneration(){
+    public ArrayList<VCPIndividual> getGeneration(){
         return generation;
     }
-    public void addIndividualToGeneration(Individual individual){
+    public void addIndividualToGeneration(VCPIndividual individual){
         generation.add(individual);
     }
     public void setBestIndividual(){
@@ -26,7 +26,7 @@ public abstract class GenericGeneration {
         }
         bestIndividual = generation.get(bestIndividualIndex);
     }
-    public Individual getBestIndividual(){
+    public VCPIndividual getBestIndividual(){
         return bestIndividual;
     }
 

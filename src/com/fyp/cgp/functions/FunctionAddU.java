@@ -2,7 +2,7 @@ package com.fyp.cgp.functions;
 
 import java.util.HashSet;
 
-public class FunctionAddV implements GenericFunction{
+public class FunctionAddU implements GenericFunction{
 	@Override
 	public void callFunction(Object[] inputs){
 		HashSet<Integer> cover = (HashSet<Integer>) inputs[0];
@@ -11,14 +11,14 @@ public class FunctionAddV implements GenericFunction{
 				status == StatusEnum.START ||
 				status == StatusEnum.IF_CONDITION_TRUE
 				){
-			int v = (int) inputs[2];
-			cover.add(v);
+			int u = (int) inputs[1];
+			cover.add(u);
 		}
 	}
 
 	@Override
 	public String getFunctionName(){
-		return "<add_vertex_v_to_cover>";
+		return "<add_vertex_u_to_cover>";
 	}
 
 	@Override
