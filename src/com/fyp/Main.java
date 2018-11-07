@@ -1,12 +1,14 @@
 package com.fyp;
 
 import com.fyp.VCPAlgorithms.Edge;
-import com.fyp.cgp.functions.RegressionFunctions;
+import com.fyp.VCPAlgorithms.VCPInstance;
+import com.fyp.cgp.functions.*;
 import com.fyp.cgp.genes.Individual;
-import com.fyp.cgp.genes.RegressionGeneration;
+import com.fyp.cgp.genes.VCPGeneration;
+import com.fyp.cgp.genes.VCPIndividual;
 import com.fyp.cgp.nodes.ConnectionNode;
 import com.fyp.cgp.nodes.GenericNode;
-import org.mariuszgromada.math.mxparser.Expression;
+//import org.mariuszgromada.math.mxparser.Expression;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,10 +17,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
@@ -50,24 +49,49 @@ public class Main {
 //		for(int i = -10; i < 11; i++){
 //			System.out.println(i + "\t" + i*i);
 		}*/
-		ArrayList<ArrayList<Integer>> graph = new ArrayList<>();
-		ArrayList<Edge> edges = new ArrayList<>();
-		List<String> lines = null;
-		File file = new File(args[0]);
-		Scanner sc = null;
-		try{
-			sc = new Scanner(file);
+		ArrayList<ArrayList<ArrayList<Integer>>> graphs = new ArrayList<>();
+		ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
+		File folder = new File("datasets");
+		File[] listOfFiles = folder.listFiles();
+		Integer[] outputs = new Integer[listOfFiles.length];
+
+		for (int i = 0; i < listOfFiles.length; i++) {
+			VCPInstance v = new VCPInstance(new File("datasets/" + listOfFiles[i].getName()));
+			graphs.add(v.getGraph());
+			edges.add(v.getEdges());
+			outputs[i] = v.getMinVCSize();
 		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
-		while (sc.hasNextLine()){
-			if(sc.nextLine().charAt(0) == 'p'){
-				sc.nextLine();
-				continue;
-			}
-			System.out.println(sc.nextLine());
-		}
+
+		GenericFunction[] functions = {new FunctionAddU(), new FunctionAddV(), new FunctionAnd(), new FunctionBreak(),
+				new FunctionElse(), new FunctionEndIf(), new FunctionIfDegVEqualsDegU(), new FunctionIfDegVGTDegU(),
+				new FunctionIfDegVLTDegU(), new FunctionIfEquiprobability(), new FunctionIfVGTU(), new FunctionIfVLTU(),
+				new FunctionIfVNotInCover(), new FunctionOr()
+		};
+		VCPGeneration generation = new VCPGeneration(10,4,0,1,functions, graphs,
+				edges, outputs, 1000);
+
+		generation.run();
+
+		generation.getBestScoreOverall();
+
+//		ArrayList<ArrayList<Integer>> graph = new ArrayList<>();
+//		ArrayList<Edge> edges = new ArrayList<>();
+//		List<String> lines = null;
+//		File file = new File(args[0]);
+//		Scanner sc = null;
+//		try{
+//			sc = new Scanner(file);
+//		}
+//		catch(Exception e){
+//			e.printStackTrace();
+//		}
+//		while (sc.hasNextLine()){
+//			if(sc.nextLine().charAt(0) == 'p'){
+//				sc.nextLine();
+//				continue;
+//			}
+//			System.out.println(sc.nextLine());
+//		}
 
 	}
 }

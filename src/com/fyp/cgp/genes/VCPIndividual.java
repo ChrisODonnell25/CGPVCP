@@ -1,14 +1,14 @@
 package com.fyp.cgp.genes;
 
+import com.fyp.VCPAlgorithms.Edge;
 import com.fyp.cgp.functions.GenericFunction;
+import com.fyp.cgp.functions.StatusEnum;
 import com.fyp.cgp.nodes.ConnectionNode;
 import com.fyp.cgp.nodes.GenericNode;
 import com.fyp.cgp.nodes.InputNode;
 import com.fyp.cgp.nodes.OutputNode;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 
 public class VCPIndividual{
 	private int columns;
@@ -20,13 +20,34 @@ public class VCPIndividual{
 	private GenericNode[] entireGrid;
 	private int[] nodesUsed;
 	private GenericFunction[] functionList;
+	private ArrayList<Integer> executionFunctions;
+	private ArrayList<Integer> breakList;
+	private ArrayList<Integer> ifFunctions;
+	private ArrayList<Integer> orAndFunctions;
+	private ArrayList<Integer> afterIfFunctions;
+	private ArrayList<Integer> startList;
+	private ArrayList<Integer> startPlusIfList;
+	private ArrayList<Integer> addBreakList;
+	private ArrayList<Integer> ifList;
+	private ArrayList<Integer> orAndList;
 	private int numberOfNodesUsed;
 	private ArrayList<ArrayList<ArrayList<Integer>>> inputGraphs;
-	private HashSet<Integer>[] outputData;
+	private ArrayList<ArrayList<Edge>> inputEdgeLists;
+	private Integer[] outputData;
 	private HashSet<Integer>[] predictedOutput;
 	private Random rand;
 
-	VCPIndividual(int columns, int rows, int levelsBack, int inputs, int outputs, GenericFunction[] functionList, ArrayList<ArrayList<ArrayList<Integer>>> inputGraphs, HashSet<Integer>[] outputData, boolean initFlag){
+	public VCPIndividual(
+			int columns,
+			int rows,
+			int levelsBack,
+			int inputs,
+			GenericFunction[] functionList,
+			ArrayList<ArrayList<ArrayList<Integer>>> inputGraphs,
+			ArrayList<ArrayList<Edge>> inputEdgeLists,
+			Integer[] outputData,
+			boolean initFlag
+	){
 		this.columns = columns;
 		this.rows = rows;
 		//this allows the user to say "no levels back constraint, connect to anything"
@@ -37,9 +58,10 @@ public class VCPIndividual{
 			this.levelsBack = levelsBack;
 		}
 		this.numberOfInputs = inputs;
-		this.numberOfOutputs = outputs;
+		this.numberOfOutputs = 1;
 		this.functionList = functionList;
 		this.inputGraphs = inputGraphs;
+		this.inputEdgeLists = inputEdgeLists;
 		this.outputData = outputData;
 		rand = new Random();
 		if(initFlag){
@@ -48,9 +70,29 @@ public class VCPIndividual{
 	}
 
 	//this constructor takes a pre-existing grid essentially copying an individual, used for offspring creation
-	VCPIndividual(int columns, int rows, int levelsBack, int inputs, int outputs, GenericFunction[] functionList, ArrayList<ArrayList<ArrayList<Integer>>> inputGraphs, HashSet<Integer>[] outputData, GenericNode[] gridToCopy){
-		this(columns, rows, levelsBack, inputs, outputs, functionList, inputGraphs, outputData, false);
+	public VCPIndividual(int columns,
+						 int rows,
+						 int levelsBack,
+						 int inputs,
+						 GenericFunction[] functionList,
+						 ArrayList<ArrayList<ArrayList<Integer>>> inputGraphs,
+						 ArrayList<ArrayList<Edge>> inputEdgeLists,
+						 Integer[] outputData,
+						 GenericNode[] gridToCopy,
+						 ArrayList<Integer> startList,
+						 ArrayList<Integer> startPlusIfList,
+						 ArrayList<Integer> addBreakList,
+						 ArrayList<Integer> ifList,
+						 ArrayList<Integer> orAndList
+	){
+		this(columns, rows, levelsBack, inputs, functionList, inputGraphs, inputEdgeLists, outputData, false);
 		this.entireGrid = gridToCopy;
+		this.startList = startList;
+		this.startPlusIfList = startPlusIfList;
+		this.addBreakList = addBreakList;
+		this.ifList = ifList;
+		this.orAndList = orAndList;
+
 		nodesUsed = new int[entireGrid.length];
 	}
 
@@ -58,6 +100,72 @@ public class VCPIndividual{
 		entireGrid = new GenericNode[numberOfInputs + numberOfOutputs + rows * columns];
 		int index = 0;
 		nodesUsed = new int[entireGrid.length];
+
+		executionFunctions = new ArrayList<>();
+		breakList = new ArrayList<>();
+		ifFunctions = new ArrayList<>();
+		afterIfFunctions = new ArrayList<>();
+		orAndFunctions = new ArrayList<>();
+
+		for(int functionIndex = 0; functionIndex < functionList.length; functionIndex++){
+			if(functionList[functionIndex].getFunctionName().contains("add")){
+				executionFunctions.add(functionIndex);
+			}
+		}
+
+		for(int functionIndex = 0; functionIndex < functionList.length; functionIndex++){
+			if(functionList[functionIndex].getFunctionName().contains("break")){
+				breakList.add(functionIndex);
+			}
+		}
+
+		for(int functionIndex = 0; functionIndex < functionList.length; functionIndex++){
+			if(functionList[functionIndex].isIf()){
+				ifFunctions.add(functionIndex);
+			}
+		}
+
+		for(int functionIndex = 0; functionIndex < functionList.length; functionIndex++){
+			if(functionList[functionIndex].getFunctionName().contains("else") || functionList[functionIndex].getFunctionName().contains("endif")){
+				afterIfFunctions.add(functionIndex);
+			}
+		}
+
+		for(int functionIndex = 0; functionIndex < functionList.length; functionIndex++){
+			if(functionList[functionIndex].getFunctionName().contains("and") && !(functionList[functionIndex].getFunctionName().contains("if")) || functionList[functionIndex].getFunctionName().contains("or")){
+				orAndFunctions.add(functionIndex);
+			}
+		}
+
+		startList = new ArrayList<>();
+		startPlusIfList = new ArrayList<>();
+		addBreakList = new ArrayList<>();
+		ifList = new ArrayList<>();
+		orAndList = new ArrayList<>();
+
+		for(Integer function : ifFunctions){
+			startList.add(function);
+			startList.add(function);
+			startList.addAll(executionFunctions);
+			startList.addAll(breakList);
+			startList.addAll(breakList);
+		}
+
+
+		startPlusIfList.addAll(startList);
+		for(Integer function : ifFunctions){
+			startPlusIfList.addAll(afterIfFunctions);
+		}
+
+		addBreakList.addAll(startList);
+
+		ifList.addAll(startList);
+		for(Integer function : ifFunctions){
+			ifList.addAll(afterIfFunctions);
+			ifList.addAll(orAndFunctions);
+		}
+
+		orAndList.addAll(ifFunctions);
 
 		//initialise inputs
 		for(int input = 0; input < numberOfInputs; input++){
@@ -73,24 +181,84 @@ public class VCPIndividual{
 			}
 		}
 
-		//initialise outputs
-		for(int output = 0; output < numberOfOutputs; output++){
-			entireGrid[index] = new OutputNode(index, rand.nextInt(numberOfInputs + columns * rows));
-			index++;
+		//initialise output
+		int outputConnection = rand.nextInt(numberOfInputs + columns * rows);
+		while(outputConnection != 0){
+			String functionString = functionList[((ConnectionNode)entireGrid[outputConnection]).getFunction()].getFunctionName();
+			if(functionString.contains("or") || functionString.contains("and") && !functionString.contains("if")){
+				outputConnection = rand.nextInt(numberOfInputs + columns * rows);
+			}
+			else{
+				break;
+			}
 		}
+		entireGrid[index] = new OutputNode(index, outputConnection);
+		//if there are any break functions in the line, find the index of the first one and set the output's connection to that
+		int breakIndex = findFirstBreakIndex(((OutputNode)entireGrid[index]).getConnection());
+		if(breakIndex > -1){
+			((OutputNode)entireGrid[entireGrid.length-1]).setConnection(breakIndex);
+		}
+
 	}
 
 	//coded and efficient
 	private ConnectionNode newValidConnectionNode(int index){
 		int maxAllowedIndex = calculateMaxAllowedIndex(index);
 		int minAllowedIndex = calculateMinAllowedIndex(index);
-		int function = rand.nextInt(functionList.length);
-		int arityOfFunction = functionList[function].getFunctionArity();
+
+		int arityOfFunction = 1;
 		int[] connections = new int[arityOfFunction];
 		for(int i = 0; i < arityOfFunction; i++){
 			int connection = rand.nextInt((maxAllowedIndex - minAllowedIndex) + 1) + minAllowedIndex;
 			connections[i] = connection;
 		}
+
+		ArrayList<Integer> availableFunctions = new ArrayList<>();
+		boolean hadIf = checkIfHadIf(connections[0]);
+		int function = -1;
+		String functionName = "";
+		if(!(index >= numberOfInputs && index < numberOfInputs + rows || connections[0] == 0)){
+			functionName = functionList[((ConnectionNode) entireGrid[connections[0]]).getFunction()].getFunctionName();
+		}
+		//if it's the first connection node or if the previous node's function name has add in it (needs cast to
+		// connection node and check for connection node type)
+		if(index >= numberOfInputs && index < numberOfInputs + rows || connections[0] == 0){
+
+			availableFunctions = startList;
+		}
+		else if(entireGrid[connections[0]] instanceof ConnectionNode &&
+				(functionName.contains("add") ||
+				functionName.contains("break"))){
+			if(hadIf){
+				availableFunctions = startPlusIfList;
+			}
+			else{
+				availableFunctions = startList;
+			}
+		}
+		else if(entireGrid[connections[0]] instanceof ConnectionNode &&
+				functionList[((ConnectionNode)entireGrid[connections[0]]).getFunction()].isIf()){
+
+			availableFunctions = ifList;
+		}
+		else if(entireGrid[connections[0]] instanceof ConnectionNode &&
+				(functionName.contains("else") ||
+				functionName.contains("endif"))){
+
+			availableFunctions = startList;
+		}
+		else if(entireGrid[connections[0]] instanceof ConnectionNode &&
+				(functionName.contains("or") ||
+						functionName.contains("and") && !functionName.contains("if"))){
+
+			availableFunctions = orAndList;
+		}
+		else {
+			System.out.println("Something has gone wrong............................");
+		}
+
+ 		function = availableFunctions.get(rand.nextInt(availableFunctions.size()));
+
 		return new ConnectionNode(index, function, connections);
 	}
 
@@ -121,9 +289,41 @@ public class VCPIndividual{
 		}
 	}
 
+	private boolean checkIfHadIf(int connectionParam){
+		int connection = connectionParam;
+		int ifCount = 0;
+		while(!(entireGrid[connection] instanceof InputNode)){
+			if(entireGrid[connection] instanceof ConnectionNode){
+				String functionName = functionList[((ConnectionNode)entireGrid[connection]).getFunction()].getFunctionName();
+				if(functionName.contains("else") ||	functionName.contains("endif") || functionName.contains("or")||	functionName.contains("and") && !functionName.contains("if")){
+					ifCount--;
+				}
+				else if(functionList[((ConnectionNode)entireGrid[connection]).getFunction()].isIf()){
+					ifCount++;
+				}
+				connection = ((ConnectionNode)entireGrid[connection]).getConnections()[0];
+			}
+		}
+		return ifCount > 0;
+	}
+
+	private int findFirstBreakIndex(int connectionParam){
+		int connection = connectionParam;
+		int breakIndex = -1;
+		while(!(entireGrid[connection] instanceof InputNode)){
+			if(entireGrid[connection] instanceof ConnectionNode){
+				if(functionList[((ConnectionNode)entireGrid[connection]).getFunction()].getFunctionName().contains("break")){
+					breakIndex = connection;
+				}
+				connection = ((ConnectionNode)entireGrid[connection]).getConnections()[0];
+			}
+		}
+		return breakIndex;
+	}
+
 	//coded
-	//TODO review - look at improvements
-	void mutate(){
+	//TODO change to handle if elses safely
+	public void mutate(){
 		boolean activeGeneModified = false;
 		while(!activeGeneModified){
 			int nodeIndex = rand.nextInt((entireGrid.length - numberOfInputs)) + numberOfInputs;
@@ -132,21 +332,68 @@ public class VCPIndividual{
 				ConnectionNode node = (ConnectionNode) entireGrid[nodeIndex];
 				int connectionNumber = rand.nextInt(node.getConnections().length);
 				if(connectionOrFunction == 0){
-					node.getConnections()[connectionNumber] = rand.nextInt((calculateMaxAllowedIndex(nodeIndex) - calculateMinAllowedIndex(nodeIndex)) + 1) + calculateMinAllowedIndex(nodeIndex);
+					String currentFunctionName = functionList[node.getFunction()].getFunctionName();
+					boolean foundValidNewConnection = false;
+					int newConnection = -1;
+					while(!foundValidNewConnection){
+						newConnection = rand.nextInt((calculateMaxAllowedIndex(nodeIndex) - calculateMinAllowedIndex(nodeIndex)) + 1) + calculateMinAllowedIndex(nodeIndex);
+						boolean hadIf = checkIfHadIf(newConnection);
+						String newConnectionFunctionName = "input";
+						if(entireGrid[newConnection] instanceof ConnectionNode){
+							newConnectionFunctionName = functionList[((ConnectionNode) entireGrid[newConnection]).getFunction()].getFunctionName();
+						}
+						foundValidNewConnection = isNewFunctionValid(currentFunctionName, newConnectionFunctionName, hadIf);
+					}
+					node.getConnections()[connectionNumber] = newConnection;
 				}
 				else{
-					int arityOld = functionList[node.getFunction()].getFunctionArity();
-					node.setFunction(rand.nextInt(functionList.length));
-					int arityNew = functionList[node.getFunction()].getFunctionArity();
-					if(arityNew != arityOld){
-						int[] connections = new int[arityNew];
-						for(int i = 0; i < arityNew; i++){
-							int connection;
-							connection = rand.nextInt((calculateMaxAllowedIndex(nodeIndex) - calculateMinAllowedIndex(nodeIndex)) + 1) + calculateMinAllowedIndex(nodeIndex);
-							connections[i] = connection;
-						}
-						node.setConnections(connections);
+					ArrayList<Integer> availableFunctions = new ArrayList<>();
+					boolean hadIf = checkIfHadIf(node.getConnections()[0]);
+					int function;
+					String functionName = "";
+					if(!(nodeIndex >= numberOfInputs && nodeIndex < numberOfInputs + rows || node.getConnections()[0] == 0)){
+						functionName = functionList[((ConnectionNode) entireGrid[node.getConnections()[0]]).getFunction()].getFunctionName();
 					}
+					//if it's the first connection node or if the previous node's function name has add in it (needs cast to
+					// connection node and check for connection node type)
+					if(nodeIndex >= numberOfInputs && nodeIndex < numberOfInputs + rows || node.getConnections()[0] == 0){
+
+						availableFunctions = startList;
+					}
+					else if(entireGrid[node.getConnections()[0]] instanceof ConnectionNode &&
+							(functionName.contains("add") ||
+									functionName.contains("break"))){
+						if(hadIf){
+							availableFunctions = startPlusIfList;
+						}
+						else{
+							availableFunctions = startList;
+						}
+					}
+					else if(entireGrid[node.getConnections()[0]] instanceof ConnectionNode &&
+							functionList[((ConnectionNode)entireGrid[node.getConnections()[0]]).getFunction()].isIf()){
+
+						availableFunctions = ifList;
+					}
+					else if(entireGrid[node.getConnections()[0]] instanceof ConnectionNode &&
+							(functionName.contains("else") ||
+									functionName.contains("endif"))){
+
+						availableFunctions = startList;
+					}
+					else if(entireGrid[node.getConnections()[0]] instanceof ConnectionNode &&
+							(functionName.contains("or") ||
+									functionName.contains("and") && !functionName.contains("if"))){
+
+						availableFunctions = orAndList;
+					}
+					else {
+						System.out.println("Something has gone wrong............................");
+					}
+
+					function = availableFunctions.get(rand.nextInt(availableFunctions.size()));
+					node.setFunction(function);
+
 				}
 				if(node.isActive()){
 					activeGeneModified = true;
@@ -159,12 +406,56 @@ public class VCPIndividual{
 					activeGeneModified = true;
 				}
 			}
+			//if there are any break functions in the line, find the index of the first one and set the output's connection to that
+			int breakIndex = findFirstBreakIndex(((OutputNode)entireGrid[entireGrid.length-1]).getConnection());
+			if(breakIndex > -1){
+				((OutputNode)entireGrid[entireGrid.length-1]).setConnection(breakIndex);
+			}
+		}
+	}
+
+	private boolean isNewFunctionValid(String currentFunction, String newFunction, boolean hadIf){
+		if(newFunction.contains("input")){
+			return true;
+		}
+		else if(newFunction.contains("add") || newFunction.contains("break")){
+			if(currentFunction.contains("break") || currentFunction.contains("add") || (currentFunction.contains("if") && !currentFunction.contains("end"))){
+				return true;
+			}
+			else if(currentFunction.contains("else") || currentFunction.contains("endif")){
+				return hadIf;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(newFunction.contains("else") || newFunction.contains("endif")){
+			if(currentFunction.contains("break") || currentFunction.contains("add") || (currentFunction.contains("if") && !currentFunction.contains("end"))){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if((newFunction.contains("if") && !newFunction.contains("end"))){
+			return true;
+		}
+		else if(newFunction.contains("or") || newFunction.contains("and") && !newFunction.contains("if")){
+			if(currentFunction.contains("if") && !currentFunction.contains("end")){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else{
+			System.out.println("Something has gone seriously wrong..........................");
+			return false;
 		}
 	}
 
 	//coded
-	//TODO review - look at improvements
-	void decodeGenotype(){
+	public void decodeGenotype(){
 		//boolean array for all of the nodes
 		boolean[] toEvaluate = new boolean[entireGrid.length];
 		//set all of the outputs to be evaluated
@@ -207,9 +498,12 @@ public class VCPIndividual{
 		for(int inputIndex = 0; inputIndex < inputGraphs.size(); inputIndex++){
 			HashSet<Integer> cover = new HashSet<>();
 			ArrayList<ArrayList<Integer>> graph = inputGraphs.get(inputIndex);
+			ArrayList<Edge> edgeList = inputEdgeLists.get(inputIndex);
 			int index = 0; //same everywhere
 			//todo check the second condition
-			while(!isCovered(graph, cover) && index <= inputGraphs.get(inputIndex).size()){ //same everywhere
+			while(!isCovered(cover, edgeList) && index < inputGraphs.get(inputIndex).size()){ //same everywhere
+				Object[] inputs = new Object[5];
+				inputs[3] = StatusEnum.START;
 				if(!cover.contains(index)){ //same everywhere
 					for(int v : graph.get(index)){ //same everywhere
 						//for all the nodes that are used
@@ -217,14 +511,14 @@ public class VCPIndividual{
 							//if it's a connection node
 							if(entireGrid[nodesUsed[i]] instanceof ConnectionNode){
 								ConnectionNode node = (ConnectionNode) entireGrid[nodesUsed[i]];
-								Object[] inputs = new Object[3];
 								inputs[0] = cover;
 								inputs[1] = index;
 								inputs[2] = v;
+								inputs[4] = graph;
 								functionList[node.getFunction()].callFunction(inputs);
 							}
 							else{
-								predictedOutput[inputIndex] = cover;
+								predictedOutput[inputIndex] = (HashSet<Integer>)inputs[0];
 							}
 						}
 					}
@@ -236,38 +530,54 @@ public class VCPIndividual{
 	}
 
 	//coded and efficient
-	private double calculateFitness(){
+	public double calculateFitness(){
 		double runningTotalFitness = 0.0;
 		for(int i = 0; i < inputGraphs.size(); i++){
-			runningTotalFitness -= Math.pow(outputData[i].size() - predictedOutput[i].size(), 2);
+			if(predictedOutput[i] != null){
+				runningTotalFitness -= Math.pow(outputData[i] - predictedOutput[i].size(), 2);
+			}
+			else{
+				runningTotalFitness -= Math.pow(outputData[i], 2);
+			}
+			if(!isCovered(predictedOutput[i], inputEdgeLists.get(i))){
+				if(predictedOutput[i] != null){
+					runningTotalFitness -= (outputData[i] - predictedOutput[i].size());
+				}
+				else{
+					runningTotalFitness -= outputData[i];
+				}
+			}
 		}
 		return runningTotalFitness - numberOfNodesUsed;
 	}
 
 	//coded
-	String getExpressions(){
+	public String getExpressions(){
 		String[] expressions = new String[entireGrid.length];
 		for(int i = 0; i < numberOfInputs; i++){
-			expressions[i] = "x" + i;
+			expressions[i] = "";
 		}
+		int numberOfTabs = 0;
 		for(int i = 0; i < numberOfNodesUsed; i++){
 			if(entireGrid[nodesUsed[i]] instanceof ConnectionNode){
 				ConnectionNode node = (ConnectionNode) entireGrid[nodesUsed[i]];
-				if(functionList[node.getFunction()].getFunctionArity() == 1){
-					expressions[node.getIndex()] = "(" + functionList[node.getFunction()].getFunctionName() + "(" + expressions[node.getConnections()[0]] + "))";
+				String functionName = functionList[node.getFunction()].getFunctionName();
+				if(functionName.contains("or") || functionName.contains("and") && !(functionName.contains("if")) ||
+						expressions[node.getConnections()[0]].endsWith("<and>") || expressions[node.getConnections()[0]].endsWith("<or>")){
+					expressions[node.getIndex()] = expressions[node.getConnections()[0]] + " " + functionName;
 				}
 				else{
-					StringBuilder fullExpression = new StringBuilder();
-					for(int j = 0; j < functionList[node.getFunction()].getFunctionArity(); j++){
-						if(j != functionList[node.getFunction()].getFunctionArity() - 1){
-							fullExpression.append("(" + expressions[node.getConnections()[j]]);
-							fullExpression.append(functionList[node.getFunction()].getFunctionName());
-						}
-						else{
-							fullExpression.append(expressions[node.getConnections()[j]] + ")");
-						}
+					String tabs = "";
+					if(functionName.contains("endif") || functionName.contains("else")){
+						numberOfTabs--;
 					}
-					expressions[node.getIndex()] = fullExpression.toString();
+					for(int j = 0; j < numberOfTabs; j++){
+						tabs += "\t";
+					}
+					if(functionList[node.getFunction()].isIf() || functionName.contains("else")){
+						numberOfTabs++;
+					}
+					expressions[node.getIndex()] = expressions[node.getConnections()[0]] + "\n" + tabs + functionName;
 				}
 			}
 			else{
@@ -275,15 +585,12 @@ public class VCPIndividual{
 				expressions[node.getIndex()] = expressions[node.getConnection()];
 			}
 		}
-		int outputIndex = 0;
 		StringBuilder expressionList = new StringBuilder();
 		for(int i = entireGrid.length - numberOfOutputs; i < entireGrid.length; i++){
-			expressionList.append("y");
-			expressionList.append(outputIndex);
+			expressionList.append("alogorithm");
 			expressionList.append(" = ");
 			expressionList.append(expressions[i]);
 			expressionList.append("\n");
-			outputIndex++;
 		}
 		return expressionList.toString().trim();
 	}
@@ -318,9 +625,33 @@ public class VCPIndividual{
 		return copy;
 	}
 
-	//todo implement
-	private boolean isCovered(ArrayList<ArrayList<Integer>> graph, HashSet<Integer> cover){
-		//todo: send list of edge lists in, pass the edge list into here with the cover and graph and set any new edges to covered
-		return false;
+	private boolean isCovered(HashSet<Integer> cover, ArrayList<Edge> edgeList){
+		for(Edge e :
+				edgeList){
+			if(!e.isCovered(cover)){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public ArrayList<Integer> getStartList(){
+		return startList;
+	}
+
+	public ArrayList<Integer> getStartPlusIfList(){
+		return startPlusIfList;
+	}
+
+	public ArrayList<Integer> getAddBreakList(){
+		return addBreakList;
+	}
+
+	public ArrayList<Integer> getIfList(){
+		return ifList;
+	}
+
+	public ArrayList<Integer> getOrAndList(){
+		return orAndList;
 	}
 }

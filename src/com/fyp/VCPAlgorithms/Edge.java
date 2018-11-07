@@ -4,7 +4,7 @@ import java.util.HashSet;
 
 public class Edge{
 	private int pointA, pointB;
-	private boolean covered;
+	private boolean covered = false;
 
 	public Edge(int pointA, int pointB){
 		this.pointA = pointA;
@@ -19,9 +19,9 @@ public class Edge{
 		return pointB;
 	}
 
-	//TODO:
 	public boolean isCovered(HashSet<Integer> cover){
 		if(cover.contains(pointA) && cover.contains(pointB)){
+			covered = true;
 			return true;
 		}
 		else{
