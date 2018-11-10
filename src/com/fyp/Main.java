@@ -67,8 +67,8 @@ public class Main {
 				new FunctionIfDegVLTDegU(), new FunctionIfEquiprobability(), new FunctionIfVGTU(), new FunctionIfVLTU(),
 				new FunctionIfVNotInCover(), new FunctionOr()
 		};
-		VCPGeneration generation = new VCPGeneration(10,4,0,1,functions, graphs,
-				edges, outputs, 1000);
+		VCPGeneration generation = new VCPGeneration(20,4,0,1,functions, graphs,
+				edges, outputs, 10000);
 
 		generation.run();
 

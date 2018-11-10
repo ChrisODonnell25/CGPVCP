@@ -66,6 +66,21 @@ public class Algorithms{
 		}
 	}
 
+	//new algorithm
+	public void newAlgorithm(){
+		int index = 0; //same everywhere
+		while(!isCovered()){ //same everywhere
+			if(!cover.contains(index)){ //same everywhere
+				for(int v : graph.get(index)){ //same everywhere
+					if(!cover.contains(v) || Math.random() > 0.5){
+						cover.add(v);
+					}
+				}
+			}
+			index++; //same everywhere
+		}
+	}
+
 	//LL
 	public void LL(){
 		int index = 0; //same everywhere
@@ -81,8 +96,8 @@ public class Algorithms{
 			index++; //same everywhere
 		}
 	}
-
 	//SLL
+
 	public void SLL(){
 		int index = 0; //same everywhere
 		while(!isCovered()){ //same everywhere
@@ -97,8 +112,8 @@ public class Algorithms{
 			index++; //same everywhere
 		}
 	}
-
 	//ASLL
+
 	public void ASLL(){
 		int index = 0; //same everywhere
 		while(!isCovered()){ //same everywhere
