@@ -36,6 +36,9 @@ public class VCPInstance{
 			int vertexOne = sc.nextInt()-1;
 			int vertexTwo = sc.nextInt()-1;
 			graph.get(vertexOne).add(vertexTwo);
+			if(!graph.get(vertexTwo).contains(vertexOne)){
+				graph.get(vertexTwo).add(vertexOne);
+			}
 			edges.add(new Edge(vertexOne, vertexTwo));
 		}
 	}

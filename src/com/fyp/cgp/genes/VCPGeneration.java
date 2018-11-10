@@ -67,6 +67,7 @@ public class VCPGeneration extends GenericGeneration{
 		setBestIndividual();
 		int generation = 0;
 		//TODO stop conditions
+		String bestString = getBestIndividual().getExpressions();
 		while(generation <= generations) {
 			getGeneration().clear();
 			VCPIndividual best = getBestIndividual();
@@ -93,22 +94,23 @@ public class VCPGeneration extends GenericGeneration{
 				getGeneration().add(offSpring);
 			}
 			setBestIndividual();
-			//            if (generation % 10000 == 0){
-			//                System.out.println(generation);
-			//                System.out.println(getBestIndividual().getExpressions() + " " + getBestIndividual().getFitness());
-			//                getBestIndividual().printStuff();
+			            if (generation % 100 == 0 || generation == 0 || !getBestIndividual().getExpressions().equals(bestString)){
+			            	bestString = getBestIndividual().getExpressions();
+			                System.out.println(generation);
+			                System.out.println(getBestIndividual().getExpressions() + " \n" + getBestIndividual().getFitness());
+							System.out.println(getBestIndividual().getCoverSizes());
 			//                System.out.println();
 			//
-			//            }
+			            }
 			generation++;
-			System.out.println(getBestIndividual().getFitness());
-			System.out.println(getBestIndividual().getExpressions());
+//			System.out.println(getBestIndividual().getFitness());
+//			System.out.println(getBestIndividual().getExpressions());
 		}
 		time = System.currentTimeMillis() - time;
 		System.out.println("Single run complete");
-		//		System.out.println(generation);
-		//		System.out.println(time);
-		System.out.println(getBestIndividual().getExpressions() + " " + getBestIndividual().getFitness());
+		System.out.println(generation);
+		System.out.println(time);
+		System.out.println(getBestIndividual().getExpressions() + "\n" + getBestIndividual().getFitness());
 		//		getBestIndividual().printStuff();
 		return generation + "," + time;
 	}

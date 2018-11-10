@@ -500,31 +500,34 @@ public class VCPIndividual{
 			ArrayList<ArrayList<Integer>> graph = inputGraphs.get(inputIndex);
 			ArrayList<Edge> edgeList = inputEdgeLists.get(inputIndex);
 			int index = 0; //same everywhere
+			int totalIndex = 0; //same everywhere
 			//todo check the second condition
-			while(!isCovered(cover, edgeList) && index < inputGraphs.get(inputIndex).size()){ //same everywhere
-				Object[] inputs = new Object[5];
-				inputs[3] = StatusEnum.START;
+			Object[] inputs = new Object[5];
+			inputs[0] = cover;
+			inputs[4] = graph;
+			while(!isCovered(cover, edgeList) && totalIndex < inputGraphs.get(inputIndex).size()*2){ //same everywhere
 				if(!cover.contains(index)){ //same everywhere
+					inputs[3] = StatusEnum.START;
+					inputs[1] = index;
 					for(int v : graph.get(index)){ //same everywhere
+						inputs[2] = v;
 						//for all the nodes that are used
 						for(int i = 0; i < numberOfNodesUsed; i++){
 							//if it's a connection node
 							if(entireGrid[nodesUsed[i]] instanceof ConnectionNode){
 								ConnectionNode node = (ConnectionNode) entireGrid[nodesUsed[i]];
-								inputs[0] = cover;
-								inputs[1] = index;
-								inputs[2] = v;
-								inputs[4] = graph;
 								functionList[node.getFunction()].callFunction(inputs);
-							}
-							else{
-								predictedOutput[inputIndex] = (HashSet<Integer>)inputs[0];
 							}
 						}
 					}
 				}
 				index++;
+				totalIndex++;
+				if(index == inputGraphs.get(inputIndex).size()){
+					index = 0;
+				}
 			}
+			predictedOutput[inputIndex] = cover;
 		}
 		fitness = calculateFitness();
 	}
@@ -534,21 +537,18 @@ public class VCPIndividual{
 		double runningTotalFitness = 0.0;
 		for(int i = 0; i < inputGraphs.size(); i++){
 			if(predictedOutput[i] != null){
-				runningTotalFitness -= Math.pow(outputData[i] - predictedOutput[i].size(), 2);
+				if(!isCovered(predictedOutput[i], inputEdgeLists.get(i))){
+					runningTotalFitness -= Math.pow(outputData[i], 2);
+				}
+				else{
+					runningTotalFitness -= Math.pow(outputData[i]-predictedOutput[i].size(), 2);
+				}
 			}
 			else{
 				runningTotalFitness -= Math.pow(outputData[i], 2);
 			}
-			if(!isCovered(predictedOutput[i], inputEdgeLists.get(i))){
-				if(predictedOutput[i] != null){
-					runningTotalFitness -= (outputData[i] - predictedOutput[i].size());
-				}
-				else{
-					runningTotalFitness -= outputData[i];
-				}
-			}
 		}
-		return runningTotalFitness - numberOfNodesUsed;
+		return runningTotalFitness;
 	}
 
 	//coded
@@ -653,5 +653,15 @@ public class VCPIndividual{
 
 	public ArrayList<Integer> getOrAndList(){
 		return orAndList;
+	}
+
+	public String getCoverSizes(){
+		StringBuilder sb = new StringBuilder();
+		int index = 1;
+		for(HashSet<Integer> set : predictedOutput){
+			sb.append("Calculated cover " + index + " size = " + set.size() + " cover " + index + " MVC = " + outputData[index-1] + " covered: " + isCovered(set, inputEdgeLists.get(index-1)) + "\n");
+			index++;
+		}
+		return sb.toString();
 	}
 }
