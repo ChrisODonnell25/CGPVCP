@@ -20,7 +20,7 @@ public class Edge{
 	}
 
 	public boolean isCovered(HashSet<Integer> cover){
-		if(cover.contains(pointA) && cover.contains(pointB)){
+		if(cover.contains(pointA) || cover.contains(pointB)){
 			covered = true;
 			return true;
 		}

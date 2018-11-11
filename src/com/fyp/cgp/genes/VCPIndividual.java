@@ -36,6 +36,7 @@ public class VCPIndividual{
 	private Integer[] outputData;
 	private HashSet<Integer>[] predictedOutput;
 	private Random rand;
+	private String algorithm;
 
 	public VCPIndividual(
 			int columns,
@@ -482,6 +483,7 @@ public class VCPIndividual{
 		}
 		//gunna count the nodes that have been set to active
 		numberOfNodesUsed = 0;
+		boolean containsAdd = false;
 		//start after the last input and count up to all nodes
 		for(int i = numberOfInputs; i < entireGrid.length; i++){
 			//if to evaluate is true then set the node active and set that node's used index in the nodes
@@ -490,44 +492,59 @@ public class VCPIndividual{
 				entireGrid[i].setActive();
 				nodesUsed[numberOfNodesUsed] = i;
 				numberOfNodesUsed++;
+				if(entireGrid[i] instanceof ConnectionNode){
+					String funcName = functionList[((ConnectionNode)entireGrid[i]).getFunction()].getFunctionName();
+					if(funcName.contains("add")){
+						containsAdd = true;
+					}
+				}
 			}
 		}
+		algorithm = getExpressions();
 		//so this the output of the program - 1 for each input graph
 		predictedOutput = new HashSet[inputGraphs.size()];
-		//for all of the graphs in the input
-		for(int inputIndex = 0; inputIndex < inputGraphs.size(); inputIndex++){
-			HashSet<Integer> cover = new HashSet<>();
-			ArrayList<ArrayList<Integer>> graph = inputGraphs.get(inputIndex);
-			ArrayList<Edge> edgeList = inputEdgeLists.get(inputIndex);
-			int index = 0; //same everywhere
-			int totalIndex = 0; //same everywhere
-			//todo check the second condition
-			Object[] inputs = new Object[5];
-			inputs[0] = cover;
-			inputs[4] = graph;
-			while(!isCovered(cover, edgeList) && totalIndex < inputGraphs.get(inputIndex).size()*2){ //same everywhere
-				if(!cover.contains(index)){ //same everywhere
-					inputs[3] = StatusEnum.START;
-					inputs[1] = index;
-					for(int v : graph.get(index)){ //same everywhere
-						inputs[2] = v;
-						//for all the nodes that are used
-						for(int i = 0; i < numberOfNodesUsed; i++){
-							//if it's a connection node
-							if(entireGrid[nodesUsed[i]] instanceof ConnectionNode){
-								ConnectionNode node = (ConnectionNode) entireGrid[nodesUsed[i]];
-								functionList[node.getFunction()].callFunction(inputs);
+		if(containsAdd){
+			//for all of the graphs in the input
+			for(int inputIndex = 0; inputIndex < inputGraphs.size(); inputIndex++){
+				HashSet<Integer> cover = new HashSet<>();
+				ArrayList<ArrayList<Integer>> graph = inputGraphs.get(inputIndex);
+				ArrayList<Edge> edgeList = inputEdgeLists.get(inputIndex);
+				int index = 0; //same everywhere
+				int totalIndex = 0; //same everywhere
+				//todo check the second condition
+				Object[] inputs = new Object[5];
+				inputs[0] = cover;
+				inputs[4] = graph;
+				while(!isCovered(cover, edgeList) && totalIndex < inputGraphs.get(inputIndex).size() * 2){ //same everywhere
+					if(!cover.contains(index)){ //same everywhere
+						inputs[3] = StatusEnum.START;
+						inputs[1] = index;
+						for(int v : graph.get(index)){ //same everywhere
+							inputs[2] = v;
+							//for all the nodes that are used
+							for(int i = 0; i < numberOfNodesUsed; i++){
+								//if it's a connection node
+								if(entireGrid[nodesUsed[i]] instanceof ConnectionNode){
+									ConnectionNode node = (ConnectionNode) entireGrid[nodesUsed[i]];
+									functionList[node.getFunction()].callFunction(inputs);
+								}
+								if(inputs[3] == StatusEnum.BROKEN){
+									break;
+								}
+							}
+							if(inputs[3] == StatusEnum.BROKEN){
+								break;
 							}
 						}
 					}
+					index++;
+					totalIndex++;
+					if(index == inputGraphs.get(inputIndex).size()){
+						index = 0;
+					}
 				}
-				index++;
-				totalIndex++;
-				if(index == inputGraphs.get(inputIndex).size()){
-					index = 0;
-				}
+				predictedOutput[inputIndex] = cover;
 			}
-			predictedOutput[inputIndex] = cover;
 		}
 		fitness = calculateFitness();
 	}
@@ -537,15 +554,16 @@ public class VCPIndividual{
 		double runningTotalFitness = 0.0;
 		for(int i = 0; i < inputGraphs.size(); i++){
 			if(predictedOutput[i] != null){
-				if(!isCovered(predictedOutput[i], inputEdgeLists.get(i))){
-					runningTotalFitness -= Math.pow(outputData[i], 2);
+				if(isCovered(predictedOutput[i], inputEdgeLists.get(i))){
+					runningTotalFitness += 1;
+					runningTotalFitness -= predictedOutput[i].size();
 				}
 				else{
-					runningTotalFitness -= Math.pow(outputData[i]-predictedOutput[i].size(), 2);
+					runningTotalFitness -= inputGraphs.get(i).size();
 				}
 			}
 			else{
-				runningTotalFitness -= Math.pow(outputData[i], 2);
+				runningTotalFitness -= 1000000000;
 			}
 		}
 		return runningTotalFitness;

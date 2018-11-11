@@ -68,6 +68,7 @@ public class VCPGeneration extends GenericGeneration{
 		int generation = 0;
 		//TODO stop conditions
 		String bestString = getBestIndividual().getExpressions();
+		double bestScore = getBestIndividual().getFitness();
 		while(generation <= generations) {
 			getGeneration().clear();
 			VCPIndividual best = getBestIndividual();
@@ -94,14 +95,16 @@ public class VCPGeneration extends GenericGeneration{
 				getGeneration().add(offSpring);
 			}
 			setBestIndividual();
-			            if (generation % 100 == 0 || generation == 0 || !getBestIndividual().getExpressions().equals(bestString)){
-			            	bestString = getBestIndividual().getExpressions();
-			                System.out.println(generation);
-			                System.out.println(getBestIndividual().getExpressions() + " \n" + getBestIndividual().getFitness());
-							System.out.println(getBestIndividual().getCoverSizes());
-			//                System.out.println();
-			//
-			            }
+			if (generation % 100 == 0 || generation == 0 || getBestIndividual().getFitness() != bestScore){
+				bestString = getBestIndividual().getExpressions();
+				bestScore = getBestIndividual().getFitness();
+				System.out.println(generation);
+				System.out.println(getBestIndividual().getExpressions() + " \n" + getBestIndividual().getFitness());
+				System.out.println(getBestIndividual().getCoverSizes());
+//                System.out.println();
+//
+			}
+			System.out.println(generation);
 			generation++;
 //			System.out.println(getBestIndividual().getFitness());
 //			System.out.println(getBestIndividual().getExpressions());

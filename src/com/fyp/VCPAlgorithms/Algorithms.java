@@ -72,7 +72,7 @@ public class Algorithms{
 		while(!isCovered()){ //same everywhere
 			if(!cover.contains(index)){ //same everywhere
 				for(int v : graph.get(index)){ //same everywhere
-					if(!cover.contains(v) || Math.random() > 0.5){
+					if(v < index){
 						cover.add(v);
 					}
 				}

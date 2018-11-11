@@ -30,7 +30,7 @@ public class VCPInstance{
 			graph.add(new ArrayList<>());
 		}
 		int numberOfEdges = sc.nextInt();
-		minVCSize = sc.nextInt();
+//		minVCSize = sc.nextInt();
 		while (sc.hasNext()){
 			sc.next();
 			int vertexOne = sc.nextInt()-1;
